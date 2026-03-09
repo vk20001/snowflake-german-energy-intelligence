@@ -90,8 +90,19 @@ def fetch_open_meteo():
             f"shortwave_radiation,cloud_cover,precipitation"
             f"&timezone=UTC&past_days=2&forecast_days=1"
         )
-        r = requests.get(url)
-        r.raise_for_status()
+        for attempt in range(3):
+            try:
+                r = requests.get(url, timeout=30)
+                r.raise_for_status()
+                break
+            except Exception as e:
+                if attempt == 2:
+                    print(f"  Skipping {loc['name']} after 3 attempts: {e}")
+                    r = None
+                    break
+                time.sleep(5)
+        if r is None:
+            continue
         data = r.json()
         hourly = data["hourly"]
         for i, ts in enumerate(hourly["time"]):
